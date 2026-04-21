@@ -131,10 +131,21 @@ window.doLogin = async function() {
     const cred = await signInWithEmailAndPassword(auth, email, pass);
     const uid = cred.user.uid;
     const snap = await getDoc(doc(db, 'stores', uid));
-    if (!snap.exists()) throw new Error('store-not-found');
-    storeData = {...snap.data(), role};
-    setupListeners(uid, role);
-    launchApp(storeData.storeName, role);
+    // Si el doc no existe (registro incompleto), lo creamos ahora
+    if (!snap.exists()) {
+      const storeName = email.split('@')[0];
+      await setDoc(doc(db, 'stores', uid), {
+        storeName, email, role, uid,
+        createdAt: serverTimestamp(),
+        plan: 'basico'
+      });
+      storeData = {storeName, role, uid};
+      await seedProducts(uid);
+    } else {
+      storeData = {...snap.data(), role};
+    }
+    setupListeners(uid, storeData.role || role);
+    launchApp(storeData.storeName, storeData.role || role);
   } catch(e) {
     showToast(firebaseError(e.code || e.message));
   } finally {
