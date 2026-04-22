@@ -69,6 +69,6 @@ Luego: Settings → Pages → Source: main branch
 | Pack     | Incluye                              | Precio sugerido |
 |----------|--------------------------------------|-----------------|
 | Básico   | Sistema StockBarrio                  | $25.000 CLP     |
-| Pro      | Sistema + toma de inventario inicial | $55.000 CLP     |
+| Pro      | Sistema + toma de inventario inicial | $55.000 CLP (dependieno del stock)     |
 | Pro II   | Sistema + capturadora lectora        | $65.000 CLP     |
 | Premium  | Todo incluido                        | $90.000 CLP     |
