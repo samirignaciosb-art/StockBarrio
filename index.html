@@ -33,6 +33,20 @@ if (!DEMO_MODE) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+  // Auto-login al recargar la página
+  onAuthStateChanged(auth, async user => {
+    if (user && !storeData) {
+      try {
+        const snap = await getDoc(doc(db, 'stores', user.uid));
+        if (snap.exists()) {
+          const savedRole = sessionStorage.getItem('sb_role') || snap.data().role || 'owner';
+          storeData = {...snap.data(), role: savedRole};
+          setupListeners(user.uid, savedRole);
+          launchApp(storeData.storeName, savedRole);
+        }
+      } catch(e) { console.log('session restore failed', e); }
+    }
+  });
 }
 
 // ── STATE ──
@@ -144,6 +158,7 @@ window.doLogin = async function() {
     } else {
       storeData = {...snap.data(), role};
     }
+    sessionStorage.setItem('sb_role', storeData.role || role);
     setupListeners(uid, storeData.role || role);
     launchApp(storeData.storeName, storeData.role || role);
   } catch(e) {
@@ -167,11 +182,7 @@ window.doLogout = async function() {
 };
 
 async function seedProducts(uid) {
-  const col = collection(db, 'stores', uid, 'products');
-  for (const p of SAMPLE) {
-    const {id, ...data} = p;
-    await addDoc(col, {...data, createdAt: serverTimestamp()});
-  }
+  // Lista limpia — el dueño agrega sus propios productos
 }
 
 function setupListeners(uid, role) {
@@ -398,15 +409,28 @@ window.completeSale = async function() {
 // ════════════════════════════════════════
 // DASHBOARD
 // ════════════════════════════════════════
+function getSaleDate(s) {
+  return s.createdAt?.seconds ? new Date(s.createdAt.seconds*1000) : new Date(s.createdAt||0);
+}
+
 function renderDashboard(c) {
-  if(c) c.innerHTML=`<div style="padding:.85rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto" id="dash"></div>`;
+  if(c) c.innerHTML=`<div style="padding:.85rem;display:flex;flex-direction:column;gap:1.25rem;overflow-y:auto;height:100%" id="dash"></div>`;
   const el=document.getElementById('dash');
   if(!el)return;
-  const today=new Date().toLocaleDateString('es-CL');
-  const todaySales=sales.filter(s=>{
-    const d=s.createdAt?.seconds?new Date(s.createdAt.seconds*1000):new Date(s.createdAt);
-    return d.toLocaleDateString('es-CL')===today;
-  });
+
+  const now=new Date();
+  const today=now.toLocaleDateString('es-CL');
+
+  // Esta semana (lun-hoy)
+  const weekStart=new Date(now); weekStart.setDate(now.getDate()-now.getDay()+1); weekStart.setHours(0,0,0,0);
+  // Semana pasada
+  const prevWeekStart=new Date(weekStart); prevWeekStart.setDate(weekStart.getDate()-7);
+  const prevWeekEnd=new Date(weekStart); prevWeekEnd.setSeconds(-1);
+
+  const todaySales=sales.filter(s=>getSaleDate(s).toLocaleDateString('es-CL')===today);
+  const weekSales=sales.filter(s=>getSaleDate(s)>=weekStart);
+  const prevWeekSales=sales.filter(s=>{ const d=getSaleDate(s); return d>=prevWeekStart&&d<=prevWeekEnd; });
+
   const income=todaySales.reduce((s,x)=>s+x.total,0);
   const costSold=todaySales.reduce((s,x)=>s+x.cost,0);
   const profit=income-costSold;
@@ -414,24 +438,79 @@ function renderDashboard(c) {
   const invested=products.reduce((s,p)=>s+p.cost*p.stock,0);
   const alerts=products.filter(p=>p.stock<=p.minStock).length;
 
+  const weekIncome=weekSales.reduce((s,x)=>s+x.total,0);
+  const prevIncome=prevWeekSales.reduce((s,x)=>s+x.total,0);
+  const weekDiff=prevIncome>0?Math.round(((weekIncome-prevIncome)/prevIncome)*100):null;
+
+  // Rotación: productos más vendidos (últimos 30 días)
+  const month30=new Date(now); month30.setDate(now.getDate()-30);
+  const recentSales=sales.filter(s=>getSaleDate(s)>=month30);
+  const rotation={};
+  recentSales.forEach(s=>(s.items||[]).forEach(i=>{
+    rotation[i.name]=(rotation[i.name]||0)+i.qty;
+  }));
+  const topProducts=Object.entries(rotation).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // Stock muerto: productos sin ventas en 30 días
+  const soldNames=new Set(Object.keys(rotation));
+  const deadStock=products.filter(p=>p.stock>0&&!soldNames.has(p.name));
+
   el.innerHTML=`
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-l">Ingresos hoy</div><div class="kpi-v g">${fmt(income)}</div><div class="kpi-s">${todaySales.length} venta${todaySales.length!==1?'s':''}</div></div>
-      <div class="kpi"><div class="kpi-l">Stock invertido</div><div class="kpi-v o">${fmt(invested)}</div><div class="kpi-s">valor inventario</div></div>
       <div class="kpi"><div class="kpi-l">Ganancia hoy</div><div class="kpi-v a">${fmt(profit)}</div><div class="kpi-s">margen ${margin}%</div></div>
-      <div class="kpi"><div class="kpi-l">Alertas</div><div class="kpi-v r">${alerts}</div><div class="kpi-s">productos críticos</div></div>
+      <div class="kpi"><div class="kpi-l">Esta semana</div><div class="kpi-v g">${fmt(weekIncome)}</div><div class="kpi-s">${weekDiff!==null?`${weekDiff>=0?'▲':'▼'} ${Math.abs(weekDiff)}% vs sem. ant.`:'primera semana'}</div></div>
+      <div class="kpi"><div class="kpi-l">Stock invertido</div><div class="kpi-v o">${fmt(invested)}</div><div class="kpi-s">${alerts} alertas activas</div></div>
     </div>
-    <div class="sec-t">📈 Últimas ventas del día</div>
-    ${todaySales.length===0
-      ? `<div style="color:var(--muted);font-size:.85rem">Sin ventas hoy todavía.</div>`
-      : todaySales.slice(0,5).map(s=>{
-          const d=s.createdAt?.seconds?new Date(s.createdAt.seconds*1000):new Date(s.createdAt);
-          return `<div class="sale-row">
-            <div><div style="font-size:.72rem;color:var(--muted)">${d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}</div>
-            <div style="font-size:.85rem;margin-top:.1rem">${(s.items||[]).map(i=>`${i.qty}× ${i.name}`).join(', ')}</div></div>
-            <div style="font-family:'Syne',sans-serif;font-weight:800;color:var(--ok)">${fmt(s.total)}</div>
-          </div>`;
-        }).join('')}`;
+
+    <div>
+      <div class="sec-t">🔥 Top productos (30 días)</div>
+      ${topProducts.length===0
+        ? `<div style="color:var(--muted);font-size:.85rem">Sin ventas registradas aún.</div>`
+        : topProducts.map(([name,qty],i)=>{
+            const p=products.find(x=>x.name===name);
+            const maxQty=topProducts[0][1];
+            const pct=Math.round((qty/maxQty)*100);
+            return `<div style="margin-bottom:.65rem">
+              <div style="display:flex;justify-content:space-between;margin-bottom:.25rem">
+                <div style="font-size:.85rem;font-weight:500">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'  '} ${name}</div>
+                <div style="font-size:.82rem;color:var(--acc);font-weight:700">${qty} uds.</div>
+              </div>
+              <div style="background:var(--s2);border-radius:20px;height:6px;overflow:hidden">
+                <div style="background:var(--acc);height:100%;width:${pct}%;border-radius:20px;transition:width .5s"></div>
+              </div>
+              ${p?`<div style="font-size:.7rem;color:var(--muted);margin-top:.15rem">Margen: ${fmt(p.price-p.cost)}/ud · Stock: ${p.stock}</div>`:''}
+            </div>`;
+          }).join('')}
+    </div>
+
+    <div>
+      <div class="sec-t">📊 Esta semana vs semana anterior</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+        <div class="kpi">
+          <div class="kpi-l">Esta semana</div>
+          <div class="kpi-v g">${fmt(weekIncome)}</div>
+          <div class="kpi-s">${weekSales.length} ventas</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-l">Semana anterior</div>
+          <div class="kpi-v" style="color:var(--muted)">${fmt(prevIncome)}</div>
+          <div class="kpi-s">${prevWeekSales.length} ventas</div>
+        </div>
+      </div>
+      ${weekDiff!==null?`<div style="margin-top:.6rem;font-size:.82rem;color:${weekDiff>=0?'var(--ok)':'var(--danger)'};text-align:center;font-weight:600">${weekDiff>=0?'▲':'▼'} ${Math.abs(weekDiff)}% ${weekDiff>=0?'más que':'menos que'} la semana pasada</div>`:''}
+    </div>
+
+    ${deadStock.length>0?`
+    <div>
+      <div class="sec-t">💀 Stock muerto (sin venta en 30 días)</div>
+      ${deadStock.map(p=>`
+        <div class="sale-row" style="margin-bottom:.5rem">
+          <div><div style="font-size:.88rem;font-weight:500">${p.emoji||'📦'} ${p.name}</div>
+          <div style="font-size:.72rem;color:var(--muted)">${p.stock} uds. · Costo invertido: ${fmt(p.stock*p.cost)}</div></div>
+          <div style="font-size:.75rem;color:var(--danger);font-weight:700">SIN MOVIMIENTO</div>
+        </div>`).join('')}
+    </div>`:''}`;
 }
 
 // ════════════════════════════════════════
@@ -604,10 +683,13 @@ window.openScanner = async function(mode) {
 };
 
 window.closeScanner = function() {
-  if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;}
+  if(scannerStream){
+    scannerStream.getTracks().forEach(t=>{ t.stop(); t.enabled=false; });
+    scannerStream=null;
+  }
   const v=document.getElementById('scan-video');
-  if(v)v.srcObject=null;
-  closeModal('modal-scanner');
+  if(v){ v.pause(); v.srcObject=null; }
+  document.getElementById('modal-scanner').classList.remove('open');
 };
 
 window.processManual = function() {
