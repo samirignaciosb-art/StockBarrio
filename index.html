@@ -1,107 +1,118 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0c0c0f">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e0f14" id="theme-color-meta">
 <title>StockBarrio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Epilogue:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- ══════════════════════════════════════
-     PANTALLA DE AUTENTICACIÓN
-══════════════════════════════════════ -->
+<!-- ══════════════════════════
+     AUTH
+══════════════════════════ -->
 <div id="auth-screen">
-  <div class="auth-logo">Stock<span>Barrio</span></div>
-  <div class="auth-sub">Control de inventario para tu negocio</div>
-
-  <div class="auth-card">
-    <!-- TABS -->
-    <div class="auth-tabs">
-      <button class="auth-tab-btn active" id="tab-login-owner"  onclick="showAuthTab('login-owner')">Dueño</button>
-      <button class="auth-tab-btn"        id="tab-login-vendor" onclick="showAuthTab('login-vendor')">Vendedor</button>
-      <button class="auth-tab-btn"        id="tab-register"     onclick="showAuthTab('register')">Registrar</button>
+  <div class="auth-wrap">
+    <div class="auth-brand">
+      <div class="logo">Stock<span>Barrio</span></div>
+      <p>Sistema de inventario profesional</p>
     </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="atab active" id="atab-login"    onclick="showAuthTab('login')">Ingresar</button>
+        <button class="atab"        id="atab-register" onclick="showAuthTab('register')">Registrar negocio</button>
+      </div>
 
-    <!-- LOGIN DUEÑO -->
-    <div class="auth-panel" id="panel-login-owner">
-      <div class="field"><label>Email</label><input id="login-email" type="email" placeholder="correo@tulocal.cl" autocomplete="email"></div>
-      <div class="field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password"></div>
-      <button class="btn-auth" data-label="Ingresar →" onclick="doLogin()">Ingresar →</button>
-    </div>
+      <!-- LOGIN -->
+      <div class="auth-panel active" id="apanel-login">
+        <div class="field"><label>Email</label><input id="login-email" type="email" placeholder="correo@negocio.cl" autocomplete="email"></div>
+        <div class="field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password"></div>
+        <button class="btn-primary" onclick="doLogin()">Ingresar al sistema →</button>
+      </div>
 
-    <!-- LOGIN VENDEDOR (PIN) -->
-    <div class="auth-panel" id="panel-login-vendor">
-      <p style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;line-height:1.5">
-        Pídele el <b style="color:var(--text)">código del negocio</b> y tu <b style="color:var(--text)">PIN</b> al dueño.
-      </p>
-      <div class="field"><label>Código del negocio</label><input id="vendor-store" type="text" placeholder="almacen_don_pedro" autocomplete="off"></div>
-      <div class="field"><label>Tu PIN (4 dígitos)</label><input id="vendor-pin" type="number" placeholder="1234" maxlength="4" autocomplete="off" inputmode="numeric"></div>
-      <button class="btn-auth" data-label="Entrar →" onclick="doVendorLogin()">Entrar →</button>
-    </div>
-
-    <!-- REGISTRO DUEÑO -->
-    <div class="auth-panel" id="panel-register">
-      <div class="field"><label>Nombre del negocio</label><input id="reg-store" type="text" placeholder="Almacén Don Pedro"></div>
-      <div class="field"><label>Tu email</label><input id="reg-email" type="email" placeholder="correo@tulocal.cl"></div>
-      <div class="field"><label>Contraseña (mín. 6 caracteres)</label><input id="reg-pass" type="password" placeholder="••••••"></div>
-      <button class="btn-auth" data-label="Crear mi negocio →" onclick="doRegister()">Crear mi negocio →</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════
-     APP PRINCIPAL
-══════════════════════════════════════ -->
-<div id="app" class="hidden">
-  <!-- Top bar -->
-  <div class="topbar">
-    <div class="tb-logo">SB</div>
-    <div class="tb-center">
-      <div class="tb-name" id="tb-name"></div>
-      <div class="tb-net">
-        <div class="tb-net-dot" id="net-dot"></div>
-        <span id="net-lbl" style="font-size:.66rem;color:var(--ok)">en línea</span>
+      <!-- REGISTER -->
+      <div class="auth-panel" id="apanel-register">
+        <div class="field"><label>Nombre del negocio</label><input id="reg-store" type="text" placeholder="Almacén Don Pedro"></div>
+        <div class="field"><label>Email</label><input id="reg-email" type="email" placeholder="correo@negocio.cl"></div>
+        <div class="field"><label>Contraseña</label><input id="reg-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
+        <button class="btn-primary" onclick="doRegister()">Crear mi negocio →</button>
       </div>
     </div>
-    <button class="btn-out" onclick="doLogout()">⬅ Salir</button>
-  </div>
-
-  <!-- Contenido principal (vistas se renderizan aquí) -->
-  <div id="main-content"></div>
-
-  <!-- Navegación inferior -->
-  <div class="bottom-nav" id="bottom-nav"></div>
-</div>
-
-<!-- ══════════════════════════════════════
-     MODALES
-══════════════════════════════════════ -->
-
-<!-- Escáner de código de barras -->
-<div id="modal-scanner" class="modal-overlay">
-  <div class="modal-sheet">
-    <h3>📷 Escanear código</h3>
-    <div class="scan-box">
-      <video id="scan-video" playsinline autoplay muted></video>
-      <div class="scan-frame"><div class="scan-corners"><div class="scan-line"></div></div></div>
-    </div>
-    <div id="scan-status" style="text-align:center;font-size:.78rem;color:var(--muted);margin-bottom:.7rem">Apunta al código de barras</div>
-    <div class="scan-manual-row">
-      <input id="scan-manual" type="text" placeholder="O ingresa el código / usa pistola lectora">
-      <button class="mbtn-ok" style="flex:0;padding:.68rem 1rem" onclick="processManualScan()">OK</button>
-    </div>
-    <div class="mbtn-row"><button class="mbtn-cancel" style="flex:1" onclick="closeScanner()">Cancelar</button></div>
   </div>
 </div>
 
-<!-- Agregar / Editar producto -->
+<!-- ══════════════════════════
+     APP
+══════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR (desktop) -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">Stock<span>Barrio</span></div>
+      <div class="sidebar-store" id="sb-store-name">Mi negocio</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
+      <button class="nav-item active" id="snav-dashboard"  onclick="navigate('dashboard')"><span class="ni">📊</span> Dashboard</button>
+      <button class="nav-item"        id="snav-alertas"    onclick="navigate('alertas')"><span class="ni">🚨</span> Alertas <span class="nav-badge" id="snav-badge" style="display:none"></span></button>
+      <button class="nav-item"        id="snav-comprar"    onclick="navigate('comprar')"><span class="ni">🛒</span> Qué comprar</button>
+
+      <div class="nav-section-label">Operación</div>
+      <button class="nav-item" id="snav-entrada"    onclick="navigate('entrada')"><span class="ni">📥</span> Entró mercadería</button>
+      <button class="nav-item" id="snav-salida"     onclick="navigate('salida')"><span class="ni">📤</span> Se vendió / salió</button>
+
+      <div class="nav-section-label">Gestión</div>
+      <button class="nav-item" id="snav-inventario" onclick="navigate('inventario')"><span class="ni">📦</span> Inventario</button>
+      <button class="nav-item" id="snav-historial"  onclick="navigate('historial')"><span class="ni">📋</span> Historial</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-label">☀️ Modo claro</span>
+        <div class="toggle-track" id="toggle-track"><div class="toggle-thumb"></div></div>
+      </button>
+      <button class="btn-logout" onclick="doLogout()">⬅ Salir del sistema</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-wrap">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="page-title" id="page-title">Dashboard</div>
+        <div class="net-badge"><div class="net-dot" id="net-dot"></div><span id="net-lbl">en línea</span></div>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-store" id="tb-store"></span>
+        <button class="btn-icon" onclick="openModal('modal-scanner')" title="Escanear">📷</button>
+        <button class="btn-icon" onclick="toggleTheme()" title="Cambiar tema" id="theme-btn">☀️</button>
+      </div>
+    </div>
+
+    <div class="content" id="main-content"></div>
+
+    <!-- MOBILE NAV -->
+    <nav class="mobile-nav">
+      <button class="mnv active" id="mnav-dashboard"  onclick="navigate('dashboard')"><span>📊</span>Inicio</button>
+      <button class="mnv"        id="mnav-alertas"    onclick="navigate('alertas')"><span>🚨</span>Alertas<i class="mnv-badge" id="mnav-badge" style="display:none"></i></button>
+      <button class="mnv"        id="mnav-entrada"    onclick="navigate('entrada')"><span>📥</span>Entrada</button>
+      <button class="mnv"        id="mnav-salida"     onclick="navigate('salida')"><span>📤</span>Salida</button>
+      <button class="mnv"        id="mnav-inventario" onclick="navigate('inventario')"><span>📦</span>Stock</button>
+    </nav>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     MODALS
+══════════════════════════ -->
+
+<!-- Producto -->
 <div id="modal-product" class="modal-overlay">
-  <div class="modal-sheet">
+  <div class="modal-box">
     <h3 id="pm-title">Agregar producto</h3>
     <div class="field"><label>Nombre</label><input id="pm-name" type="text" placeholder="Coca-Cola 1.5L"></div>
     <div class="modal-grid">
@@ -114,68 +125,52 @@
       <label>Código de barras (EAN)</label>
       <div style="display:flex;gap:.5rem">
         <input id="pm-ean" type="text" placeholder="7801234567890" style="flex:1">
-        <button onclick="scanForProduct()" style="padding:.72rem 1rem;background:var(--s2);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:1rem">📷</button>
+        <button onclick="scanForProduct()" class="btn-sm" style="flex:0;padding:.72rem 1rem">📷</button>
       </div>
     </div>
     <div class="field"><label>Emoji</label><input id="pm-emoji" type="text" placeholder="🥤" maxlength="2"></div>
-    <div class="mbtn-row">
+    <div class="modal-btns">
       <button class="mbtn-cancel" onclick="closeModal('modal-product')">Cancelar</button>
-      <button class="mbtn-ok"     onclick="saveProduct()">Guardar</button>
+      <button class="mbtn-ok"     onclick="saveProduct()">Guardar producto</button>
     </div>
   </div>
 </div>
 
-<!-- Confirmar venta -->
-<div id="modal-sale" class="modal-overlay">
-  <div class="modal-sheet">
-    <h3>Confirmar cobro</h3>
-    <div id="ms-items" style="font-size:.8rem;color:var(--muted);text-align:center;line-height:1.5"></div>
-    <div class="sale-total-big" id="ms-total"></div>
-    <div class="mbtn-row">
-      <button class="mbtn-cancel" onclick="closeModal('modal-sale')">Cancelar</button>
-      <button class="mbtn-ok"     onclick="completeSale()">✓ Cobrado</button>
-    </div>
-  </div>
-</div>
-
-<!-- Confirmar eliminar producto -->
+<!-- Eliminar producto -->
 <div id="modal-delete" class="modal-overlay">
-  <div class="modal-sheet">
+  <div class="modal-box">
     <h3>Eliminar producto</h3>
-    <p style="font-size:.88rem;color:var(--muted);margin-bottom:.5rem">¿Eliminar <b id="del-name" style="color:var(--text)"></b>?</p>
-    <p id="del-stock-warn" style="font-size:.8rem;color:var(--warn);display:none;margin-bottom:.5rem"></p>
-    <p style="font-size:.78rem;color:var(--muted)">Esta acción no se puede deshacer.</p>
-    <div class="mbtn-row">
+    <p style="font-size:.88rem;color:var(--text2);margin-bottom:.5rem">¿Eliminar <b id="del-name" style="color:var(--text)"></b>?</p>
+    <p id="del-warn" style="font-size:.8rem;color:var(--warn);display:none;margin-bottom:.5rem"></p>
+    <p style="font-size:.78rem;color:var(--text2)">Esta acción no se puede deshacer.</p>
+    <div class="modal-btns">
       <button class="mbtn-cancel" onclick="closeModal('modal-delete')">Cancelar</button>
-      <button class="mbtn-ok" style="background:var(--danger)" onclick="confirmDeleteExecute()">Eliminar</button>
+      <button class="mbtn-danger" onclick="confirmDeleteExecute()">Eliminar</button>
     </div>
   </div>
 </div>
 
-<!-- Agregar vendedor -->
-<div id="modal-vendor" class="modal-overlay">
-  <div class="modal-sheet">
-    <h3>Agregar vendedor</h3>
-    <div class="field"><label>Nombre del vendedor</label><input id="nv-name" type="text" placeholder="María, Pedro..."></div>
-    <div class="field">
-      <label>PIN de 4 dígitos</label>
-      <input id="nv-pin" type="number" placeholder="1234" maxlength="4" inputmode="numeric">
-      <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem">El vendedor usará este PIN para ingresar al sistema</div>
+<!-- Escáner -->
+<div id="modal-scanner" class="modal-overlay">
+  <div class="modal-box">
+    <h3>📷 Escanear código de barras</h3>
+    <div class="scan-box">
+      <video id="scan-video" playsinline autoplay muted></video>
+      <div class="scan-frame"><div class="scan-corners"><div class="scan-line"></div></div></div>
     </div>
-    <div class="mbtn-row">
-      <button class="mbtn-cancel" onclick="closeModal('modal-vendor')">Cancelar</button>
-      <button class="mbtn-ok"     onclick="saveVendor()">Crear vendedor</button>
+    <div id="scan-status" style="text-align:center;font-size:.78rem;color:var(--text2);margin-bottom:.75rem">Apunta al código de barras</div>
+    <div class="scan-manual-row">
+      <input id="scan-manual" type="text" placeholder="O ingresa código / pistola lectora">
+      <button class="mbtn-ok" style="flex:0;padding:.68rem 1rem" onclick="processManualScan()">OK</button>
     </div>
+    <div class="modal-btns"><button class="mbtn-cancel" style="flex:1" onclick="closeScanner()">Cancelar</button></div>
   </div>
 </div>
 
-<!-- Toast notificaciones -->
-<div class="toast" id="toast"></div>
+<!-- Toast -->
+<div class="toast" id="toast"><span class="toast-icon" id="toast-icon"></span><span id="toast-msg"></span></div>
 
-<!-- ══════════════════════════════════════
-     SCRIPTS (módulos ES6)
-══════════════════════════════════════ -->
+<!-- Scripts -->
 <script type="module" src="js/app.js"></script>
-
 </body>
 </html>
