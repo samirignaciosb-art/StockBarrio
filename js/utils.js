@@ -1,64 +1,65 @@
-// ════════════════════════════════════════
-// utils.js — Estado global y utilidades
-// ════════════════════════════════════════
-
-// ── ESTADO GLOBAL ──
+// utils.js
 export const state = {
-  storeData:  null,   // { uid, storeName, role }
-  products:   [],
-  sales:      [],
-  cart:       [],
-  currentView: '',
-  unsubs:     [],     // listeners Firestore para limpiar al logout
-  isOnline:   navigator.onLine,
-  pendingSales: [],   // ventas offline pendientes de sync
+  uid: null, storeName: '', products: [], sales: [], currentView: '', unsubs: [], isOnline: navigator.onLine
 };
 
-// ── FORMATO MONEDA CLP ──
-export function fmt(n) {
-  return '$' + Math.round(n || 0).toLocaleString('es-CL');
-}
+export const fmt = n => '$' + Math.round(n||0).toLocaleString('es-CL');
+export const toDate = v => v?.seconds ? new Date(v.seconds*1000) : new Date(v||0);
 
-// ── FECHA DESDE FIRESTORE O STRING ──
-export function toDate(val) {
-  if (!val) return new Date(0);
-  if (val?.seconds) return new Date(val.seconds * 1000);
-  return new Date(val);
-}
-
-// ── TOAST ──
-export function showToast(msg, type = 'ok', dur = 2800) {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
+export function showToast(msg, type='ok', dur=2800) {
+  const t=document.getElementById('toast'), i=document.getElementById('toast-icon'), m=document.getElementById('toast-msg');
+  if(!t)return;
+  i.textContent = type==='ok'?'✓':type==='err'?'✕':'⚠';
+  m.textContent = msg;
   t.className = `toast show ${type}`;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), dur);
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), dur);
 }
 
-// ── MODAL ──
 export function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
 export function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 
-// ── ONLINE/OFFLINE LISTENER ──
-export function initNetworkWatcher(onOnline, onOffline) {
-  window.addEventListener('online',  () => { state.isOnline = true;  onOnline?.();  });
-  window.addEventListener('offline', () => { state.isOnline = false; onOffline?.(); });
+// ── THEME ──
+export function initTheme() {
+  const saved = localStorage.getItem('sb_theme') || 'dark';
+  applyTheme(saved);
 }
 
-// ── OFFLINE QUEUE: guardar venta pendiente ──
-export function queueOfflineSale(sale) {
-  const q = JSON.parse(localStorage.getItem('sb_offline_queue') || '[]');
-  q.push({ ...sale, _queued: Date.now() });
-  localStorage.setItem('sb_offline_queue', JSON.stringify(q));
-  state.pendingSales = q;
+export function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
-export function getOfflineQueue() {
-  return JSON.parse(localStorage.getItem('sb_offline_queue') || '[]');
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('sb_theme', theme);
+  const meta = document.getElementById('theme-color-meta');
+  if (meta) meta.content = theme === 'dark' ? '#0e0f14' : '#f0f2f7';
+  const track = document.getElementById('toggle-track');
+  const label = document.getElementById('theme-label');
+  const btn   = document.getElementById('theme-btn');
+  if (track) track.classList.toggle('on', theme === 'light');
+  if (label) label.textContent = theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro';
+  if (btn)   btn.textContent   = theme === 'dark' ? '☀️' : '🌙';
 }
 
-export function clearOfflineQueue() {
-  localStorage.removeItem('sb_offline_queue');
-  state.pendingSales = [];
+// ── NETWORK ──
+export function initNetwork(onOnline, onOffline) {
+  window.addEventListener('online',  () => { state.isOnline=true;  onOnline?.();  updateNetDot(true); });
+  window.addEventListener('offline', () => { state.isOnline=false; onOffline?.(); updateNetDot(false); });
+  updateNetDot(navigator.onLine);
 }
+
+function updateNetDot(online) {
+  const dot=document.getElementById('net-dot'), lbl=document.getElementById('net-lbl');
+  if(dot) dot.className = 'net-dot' + (online?'':' offline');
+  if(lbl) lbl.textContent = online ? 'en línea' : 'offline';
+}
+
+// ── OFFLINE QUEUE ──
+export function queueSale(sale) {
+  const q = JSON.parse(localStorage.getItem('sb_q')||'[]');
+  q.push(sale); localStorage.setItem('sb_q', JSON.stringify(q));
+}
+export function getQueue()   { return JSON.parse(localStorage.getItem('sb_q')||'[]'); }
+export function clearQueue() { localStorage.removeItem('sb_q'); }

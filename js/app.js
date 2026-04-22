@@ -1,114 +1,83 @@
-// ════════════════════════════════════════
 // app.js — Orquestador principal
-// ════════════════════════════════════════
+import { initAuth } from './auth.js';
+import { initTheme, initNetwork, toggleTheme, showToast } from './utils.js';
+import { initGun } from './scanner.js';
 
-import { state, showToast, initNetworkWatcher } from './utils.js';
-import { doLogout as _doLogout } from './auth.js';
-import { initAuthPersistence }  from './auth.js';
-import { initGunReader }        from './scanner.js';
-import { updateAlertBadge }     from './dashboard.js';
-
-// ── LANZAR APP DESPUÉS DE LOGIN ──
-export function launchApp(storeName, role) {
-  document.getElementById('auth-screen').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  document.getElementById('tb-name').textContent = storeName;
-
-  renderNav(role);
-
-  if (role === 'vendor') switchView('vender');
-  else switchView('dashboard');
-
-  // Watcher online/offline
-  initNetworkWatcher(
-    () => { showToast('✓ Conexión restaurada', 'ok'); updateNetworkUI(true);  },
-    () => { showToast('Sin conexión — modo offline', 'warn');  updateNetworkUI(false); }
-  );
-
-  updateNetworkUI(navigator.onLine);
-  window.addEventListener('products-updated', updateAlertBadge);
-}
-
-function updateNetworkUI(online) {
-  const dot = document.getElementById('net-dot');
-  const lbl = document.getElementById('net-lbl');
-  if (!dot || !lbl) return;
-  dot.style.background = online ? 'var(--ok)' : 'var(--warn)';
-  lbl.textContent      = online ? 'en línea' : 'offline';
-  lbl.style.color      = online ? 'var(--ok)' : 'var(--warn)';
-}
-
-// ── NAVEGACIÓN INFERIOR ──
-function renderNav(role) {
-  const nav = document.getElementById('bottom-nav');
-  if (role === 'vendor') {
-    nav.innerHTML = `
-      <button class="nv active" id="nav-vender"    onclick="switchView('vender')"><span>🛍️</span>Vender</button>
-      <button class="nv"        id="nav-historial"  onclick="switchView('historial')"><span>📋</span>Ventas</button>`;
-  } else {
-    nav.innerHTML = `
-      <button class="nv active" id="nav-dashboard"  onclick="switchView('dashboard')"><span>📊</span>Resumen</button>
-      <button class="nv"        id="nav-alertas"    onclick="switchView('alertas')"><span>🚨</span>Alertas<i class="nbadge" id="alert-badge" style="display:none"></i></button>
-      <button class="nv"        id="nav-inventario" onclick="switchView('inventario')"><span>📦</span>Stock</button>
-      <button class="nv"        id="nav-historial"  onclick="switchView('historial')"><span>📋</span>Ventas</button>
-      <button class="nv"        id="nav-vendedores" onclick="switchView('vendedores')"><span>👥</span>Equipo</button>`;
-  }
-}
-
-// ── CAMBIAR VISTA ──
-window.switchView = async function(v) {
-  state.currentView = v;
-  document.querySelectorAll('.nv').forEach(n => n.classList.remove('active'));
-  document.getElementById('nav-' + v)?.classList.add('active');
-
-  const c = document.getElementById('main-content');
-
-  if (v === 'vender') {
-    const { renderVender } = await import('./sales.js');
-    renderVender(c);
-  } else if (v === 'dashboard') {
-    const { renderDashboard } = await import('./dashboard.js');
-    renderDashboard(c);
-  } else if (v === 'alertas') {
-    const { renderAlertas } = await import('./dashboard.js');
-    renderAlertas(c);
-  } else if (v === 'inventario') {
-    const { renderInventario } = await import('./inventory.js');
-    renderInventario(c);
-  } else if (v === 'historial') {
-    const { renderHistorial } = await import('./sales.js');
-    renderHistorial(c);
-  } else if (v === 'vendedores') {
-    const { renderVendors } = await import('./vendors.js');
-    renderVendors(c);
-  }
+const PAGE_TITLES = {
+  dashboard: 'Dashboard', alertas: 'Alertas de stock', comprar: 'Qué comprar',
+  entrada: 'Entrada de mercadería', salida: 'Salida / Ventas', inventario: 'Inventario', historial: 'Historial'
 };
 
-// ── INIT ──
-document.addEventListener('DOMContentLoaded', () => {
-  initAuthPersistence();
-  initGunReader();
+export function launchApp(storeName) {
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('sb-store-name').textContent = storeName;
+  document.getElementById('tb-store').textContent = storeName;
+  navigate('dashboard');
 
-  // Escáner manual: cerrar con Escape
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      import('./scanner.js').then(m => m.closeScanner());
-      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
-    }
-  });
+  initNetwork(
+    () => showToast('✓ Conexión restaurada'),
+    () => showToast('Sin conexión — modo offline', 'warn')
+  );
 
-  // Cerrar modales tocando el overlay
-  document.addEventListener('click', e => {
-    if (!e.target.classList.contains('modal-overlay')) return;
-    if (e.target.id === 'modal-scanner') {
-      import('./scanner.js').then(m => m.closeScanner());
-    } else {
-      e.target.classList.remove('open');
-    }
+  window.addEventListener('products-updated', updateAlertBadge);
+  window.addEventListener('sales-updated',    updateAlertBadge);
+}
+
+let currentCleanup = null;
+
+window.navigate = async function(view) {
+  // Cleanup previous view listeners
+  const content = document.getElementById('main-content');
+  if(content._cleanup){content._cleanup();content._cleanup=null;}
+
+  // Update nav
+  document.querySelectorAll('.nav-item, .mnv').forEach(n => n.classList.remove('active'));
+  document.getElementById('snav-'+view)?.classList.add('active');
+  document.getElementById('mnav-'+view)?.classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_TITLES[view] || view;
+
+  // Render view
+  const { renderDashboard, renderAlertas, renderComprar, renderEntrada, renderSalida, renderInventario, renderHistorial } = await import('./views.js');
+  const renders = { dashboard:renderDashboard, alertas:renderAlertas, comprar:renderComprar, entrada:renderEntrada, salida:renderSalida, inventario:renderInventario, historial:renderHistorial };
+  const fn = renders[view];
+  if(fn) fn(content);
+};
+
+function updateAlertBadge() {
+  const { state } = window._state || {};
+  import('./utils.js').then(({state})=>{
+    const cnt = state.products.filter(p=>p.stock<=p.minStock).length;
+    ['snav-badge','mnav-badge'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+      el.textContent=cnt; el.style.display=cnt>0?'inline':'none';
+    });
   });
+}
+
+// Theme toggle exposed
+window.toggleTheme = toggleTheme;
+
+// Modal close on overlay click
+document.addEventListener('click', e=>{
+  if(!e.target.classList.contains('modal-overlay'))return;
+  if(e.target.id==='modal-scanner'){ import('./scanner.js').then(m=>m.closeScanner()); }
+  else e.target.classList.remove('open');
 });
 
-// Exponer para HTML
-window.launchApp = launchApp;
+// Escape key
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Escape')return;
+  import('./scanner.js').then(m=>m.closeScanner());
+  document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
+});
 
-window.doLogout = _doLogout;
+// Boot
+document.addEventListener('DOMContentLoaded', ()=>{
+  initTheme();
+  initAuth();
+  initGun();
+});
+
+window.launchApp = launchApp;
