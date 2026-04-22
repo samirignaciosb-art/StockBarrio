@@ -3,7 +3,6 @@
 // ════════════════════════════════════════
 
 import { state, showToast } from './utils.js';
-import { addToCart } from './sales.js';
 
 let scannerStream = null;
 let scannerMode   = 'sell'; // 'sell' | 'product'
@@ -50,10 +49,8 @@ export function processBarcode(code) {
     const p = state.products.find(x => x.ean === trimmed);
     if (p) {
       // Importar dinámicamente para evitar circular
-      import('./sales.js').then(m => {
-        window.addToCart(p.id);
-        showToast(`✓ ${p.name} agregado`);
-      });
+      window.addToCart(p.id);
+      showToast(`✓ ${p.name} agregado`);
     } else {
       showToast(`Código ${trimmed} no registrado`, 'err');
     }

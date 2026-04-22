@@ -152,8 +152,6 @@ export function initAuthPersistence() {
 
 // ── FIRESTORE LISTENERS en tiempo real ──
 function setupFirestoreListeners(uid) {
-  const { onSnapshot, collection, query, orderBy, limit } = window._fb;
-  // Importadas globalmente desde app.js — ver nota abajo
   import('./inventory.js').then(m => m.setupProductListener(uid));
   import('./sales.js').then(m => m.setupSalesListener(uid));
 }

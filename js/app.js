@@ -3,6 +3,7 @@
 // ════════════════════════════════════════
 
 import { state, showToast, initNetworkWatcher } from './utils.js';
+import { doLogout as _doLogout } from './auth.js';
 import { initAuthPersistence }  from './auth.js';
 import { initGunReader }        from './scanner.js';
 import { updateAlertBadge }     from './dashboard.js';
@@ -109,3 +110,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Exponer para HTML
 window.launchApp = launchApp;
+
+window.doLogout = _doLogout;

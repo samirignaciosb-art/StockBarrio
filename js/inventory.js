@@ -88,7 +88,7 @@ window.editProduct = function(id) {
 };
 
 // ── GUARDAR PRODUCTO ──
-window.saveProduct = async function() {
+async function saveProduct() {
   const name     = document.getElementById('pm-name').value.trim();
   const price    = parseFloat(document.getElementById('pm-price').value);
   const cost     = parseFloat(document.getElementById('pm-cost').value);

@@ -80,7 +80,7 @@ function updateOfflineBanner() {
 }
 
 // ── GRID DE PRODUCTOS ──
-window.filterGrid = function() {
+function filterGrid() {
   renderGrid(document.getElementById('vsearch')?.value?.toLowerCase() || '');
 };
 
@@ -105,7 +105,7 @@ export function renderGrid(filter = '') {
 }
 
 // ── CARRITO ──
-window.addToCart = function(id) {
+function addToCart(id) {
   const p = state.products.find(x => x.id === id);
   if (!p || p.stock === 0) return;
   const inc = state.cart.find(x => x.id === id);
@@ -118,7 +118,7 @@ window.addToCart = function(id) {
   renderCart();
 };
 
-window.changeQty = function(id, d) {
+function changeQty(id, d) {
   const item = state.cart.find(x => x.id === id);
   if (!item) return;
   item.qty += d;
@@ -126,7 +126,7 @@ window.changeQty = function(id, d) {
   renderCart();
 };
 
-window.clearCart = function() { state.cart = []; renderCart(); };
+function clearCart() { state.cart = []; renderCart(); };
 
 export function renderCart() {
   const el  = document.getElementById('cart-items');
@@ -164,7 +164,7 @@ export function renderCart() {
 }
 
 // ── CONFIRMAR VENTA ──
-window.openSaleConfirm = function() {
+function openSaleConfirm() {
   const total = state.cart.reduce((s, i) => s + i.price * i.qty, 0);
   document.getElementById('ms-items').textContent = state.cart.map(i => `${i.qty}× ${i.name}`).join(' · ');
   document.getElementById('ms-total').textContent = fmt(total);
@@ -172,7 +172,7 @@ window.openSaleConfirm = function() {
 };
 
 // ── COMPLETAR VENTA ──
-window.completeSale = async function() {
+async function completeSale() {
   const uid   = state.storeData.uid;
   const total = state.cart.reduce((s, i) => s + i.price * i.qty, 0);
   const cost  = state.cart.reduce((s, i) => {
@@ -262,3 +262,9 @@ function _renderHist() {
 window.openScannerSell = function() {
   import('./scanner.js').then(m => m.openScanner('sell'));
 };
+window.addToCart = addToCart;
+window.changeQty = changeQty;
+window.clearCart = clearCart;
+window.filterGrid = filterGrid;
+window.openSaleConfirm = openSaleConfirm;
+window.completeSale = completeSale;
