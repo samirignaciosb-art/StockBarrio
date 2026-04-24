@@ -414,3 +414,16 @@ html, body { height:100%; font-family:var(--font); background:var(--bg); color:v
   .kpi-value { font-size:1.35rem; }
   .entry-grid { grid-template-columns:1fr; }
 }
+
+/* ── EXTRAS para sb-final ── */
+.btn-link{background:none;border:none;color:var(--acc);cursor:pointer;font-family:var(--font);font-size:.82rem;padding:0;}
+.btn-link:hover{opacity:.8;text-decoration:underline}
+
+/* Toma de inventario highlight */
+#toma-list .inv-row:focus-within{background:var(--acc-dim);border-radius:var(--r)}
+
+/* Entry row highlight al buscar con pistola */
+.inv-row.highlighted{background:var(--acc-dim);border-radius:var(--r);transition:background .3s}
+
+/* Fade in animation para vistas */
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
