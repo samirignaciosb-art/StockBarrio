@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0e0f14" id="theme-color-meta">
+<meta name="theme-color" content="#0e0f14" id="theme-meta">
 <title>StockBarrio</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -24,20 +24,16 @@
         <button class="atab active" id="atab-login"    onclick="showAuthTab('login')">Ingresar</button>
         <button class="atab"        id="atab-register" onclick="showAuthTab('register')">Registrar negocio</button>
       </div>
-
-      <!-- LOGIN -->
       <div class="auth-panel active" id="apanel-login">
         <div class="field"><label>Email</label><input id="login-email" type="email" placeholder="correo@negocio.cl" autocomplete="email"></div>
         <div class="field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password"></div>
-        <button class="btn-primary" onclick="doLogin()">Ingresar al sistema →</button>
+        <button class="btn-auth" onclick="doLogin()">Ingresar →</button>
       </div>
-
-      <!-- REGISTER -->
       <div class="auth-panel" id="apanel-register">
         <div class="field"><label>Nombre del negocio</label><input id="reg-store" type="text" placeholder="Almacén Don Pedro"></div>
         <div class="field"><label>Email</label><input id="reg-email" type="email" placeholder="correo@negocio.cl"></div>
         <div class="field"><label>Contraseña</label><input id="reg-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
-        <button class="btn-primary" onclick="doRegister()">Crear mi negocio →</button>
+        <button class="btn-auth" onclick="doRegister()">Crear mi negocio →</button>
       </div>
     </div>
   </div>
@@ -48,28 +44,30 @@
 ══════════════════════════ -->
 <div id="app">
 
-  <!-- SIDEBAR (desktop) -->
+  <!-- SIDEBAR desktop -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo">Stock<span>Barrio</span></div>
-      <div class="sidebar-store" id="sb-store-name">Mi negocio</div>
+      <div class="sidebar-store" id="sb-store-name"></div>
     </div>
-
     <nav class="sidebar-nav">
       <div class="nav-section-label">Principal</div>
-      <button class="nav-item active" id="snav-dashboard"  onclick="navigate('dashboard')"><span class="ni">📊</span> Dashboard</button>
-      <button class="nav-item"        id="snav-alertas"    onclick="navigate('alertas')"><span class="ni">🚨</span> Alertas <span class="nav-badge" id="snav-badge" style="display:none"></span></button>
-      <button class="nav-item"        id="snav-comprar"    onclick="navigate('comprar')"><span class="ni">🛒</span> Qué comprar</button>
+      <button class="nav-item active" id="snav-dashboard"  onclick="navigate('dashboard')"><span class="ni">📊</span>Dashboard</button>
+      <button class="nav-item"        id="snav-alertas"    onclick="navigate('alertas')"><span class="ni">🚨</span>Alertas<span class="nav-badge" id="snav-badge" style="display:none"></span></button>
+      <button class="nav-item"        id="snav-comprar"    onclick="navigate('comprar')"><span class="ni">🛒</span>Qué comprar</button>
 
-      <div class="nav-section-label">Operación</div>
-      <button class="nav-item" id="snav-entrada"    onclick="navigate('entrada')"><span class="ni">📥</span> Entró mercadería</button>
-      <button class="nav-item" id="snav-salida"     onclick="navigate('salida')"><span class="ni">📤</span> Se vendió / salió</button>
+      <div class="nav-section-label">Operación diaria</div>
+      <button class="nav-item" id="snav-entrada"   onclick="navigate('entrada')"><span class="ni">📥</span>Entró mercadería</button>
+      <button class="nav-item" id="snav-salida"    onclick="navigate('salida')"><span class="ni">📤</span>Se vendió / salió</button>
 
       <div class="nav-section-label">Gestión</div>
-      <button class="nav-item" id="snav-inventario" onclick="navigate('inventario')"><span class="ni">📦</span> Inventario</button>
-      <button class="nav-item" id="snav-historial"  onclick="navigate('historial')"><span class="ni">📋</span> Historial</button>
-    </nav>
+      <button class="nav-item" id="snav-inventario" onclick="navigate('inventario')"><span class="ni">📦</span>Inventario</button>
+      <button class="nav-item" id="snav-historial"  onclick="navigate('historial')"><span class="ni">📋</span>Historial ventas</button>
+      <button class="nav-item" id="snav-ajustes"    onclick="navigate('ajustes')"><span class="ni">🔧</span>Ajustes stock</button>
 
+      <div class="nav-section-label">Pro</div>
+      <button class="nav-item" id="snav-toma"       onclick="navigate('toma')"><span class="ni">📋</span>Toma de inventario</button>
+    </nav>
     <div class="sidebar-footer">
       <button class="theme-toggle" onclick="toggleTheme()">
         <span id="theme-label">☀️ Modo claro</span>
@@ -84,12 +82,15 @@
     <div class="topbar">
       <div class="topbar-left">
         <div class="page-title" id="page-title">Dashboard</div>
-        <div class="net-badge"><div class="net-dot" id="net-dot"></div><span id="net-lbl">en línea</span></div>
+        <div class="net-badge">
+          <div class="net-dot" id="net-dot"></div>
+          <span id="net-lbl">en línea</span>
+        </div>
       </div>
       <div class="topbar-right">
         <span class="topbar-store" id="tb-store"></span>
-        <button class="btn-icon" onclick="openModal('modal-scanner')" title="Escanear">📷</button>
-        <button class="btn-icon" onclick="toggleTheme()" title="Cambiar tema" id="theme-btn">☀️</button>
+        <button class="btn-icon" onclick="openScanner('sell')" title="Escanear">📷</button>
+        <button class="btn-icon" onclick="toggleTheme()" id="theme-btn" title="Cambiar tema">☀️</button>
       </div>
     </div>
 
@@ -114,21 +115,23 @@
 <div id="modal-product" class="modal-overlay">
   <div class="modal-box">
     <h3 id="pm-title">Agregar producto</h3>
-    <div class="field"><label>Nombre</label><input id="pm-name" type="text" placeholder="Coca-Cola 1.5L"></div>
+    <div class="field">
+      <label>Código de barras EAN</label>
+      <div style="display:flex;gap:.5rem">
+        <input id="pm-ean" type="text" placeholder="7801234567890" style="flex:1"
+          oninput="if(this.value.length>=8)lookupEAN()" onblur="lookupEAN()">
+        <button onclick="scanForProduct()" class="btn-sm" style="flex:0;padding:.72rem 1rem" title="Escanear">📷</button>
+        <button onclick="lookupEAN()" class="btn-sm ghost" style="flex:0;padding:.72rem .85rem" title="Buscar">🔍</button>
+      </div>
+      <div id="ean-hint" style="display:none;font-size:.75rem;margin-top:.4rem;padding:.3rem .7rem;border-radius:6px;background:var(--surface2)"></div>
+    </div>
+    <div class="field"><label>Nombre del producto</label><input id="pm-name" type="text" placeholder="Coca-Cola 1.5L"></div>
     <div class="modal-grid">
       <div class="field"><label>Precio venta ($)</label><input id="pm-price" type="number" placeholder="1500" inputmode="numeric"></div>
       <div class="field"><label>Precio costo ($)</label><input id="pm-cost"  type="number" placeholder="900"  inputmode="numeric"></div>
       <div class="field"><label>Stock actual</label>   <input id="pm-stock" type="number" placeholder="24"   inputmode="numeric"></div>
       <div class="field"><label>Stock mínimo</label>   <input id="pm-min"   type="number" placeholder="5"    inputmode="numeric"></div>
     </div>
-    <div class="field">
-      <label>Código de barras (EAN)</label>
-      <div style="display:flex;gap:.5rem">
-        <input id="pm-ean" type="text" placeholder="7801234567890" style="flex:1">
-        <button onclick="scanForProduct()" class="btn-sm" style="flex:0;padding:.72rem 1rem">📷</button>
-      </div>
-    </div>
-    <div class="field"><label>Emoji</label><input id="pm-emoji" type="text" placeholder="🥤" maxlength="2"></div>
     <div class="modal-btns">
       <button class="mbtn-cancel" onclick="closeModal('modal-product')">Cancelar</button>
       <button class="mbtn-ok"     onclick="saveProduct()">Guardar producto</button>
@@ -163,14 +166,24 @@
       <input id="scan-manual" type="text" placeholder="O ingresa código / pistola lectora">
       <button class="mbtn-ok" style="flex:0;padding:.68rem 1rem" onclick="processManualScan()">OK</button>
     </div>
-    <div class="modal-btns"><button class="mbtn-cancel" style="flex:1" onclick="closeScanner()">Cancelar</button></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" style="flex:1" onclick="closeScanner()">Cancelar</button>
+    </div>
   </div>
 </div>
 
 <!-- Toast -->
-<div class="toast" id="toast"><span class="toast-icon" id="toast-icon"></span><span id="toast-msg"></span></div>
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon"></span>
+  <span id="toast-msg"></span>
+</div>
 
-<!-- Scripts -->
+<!-- btn-link helper style -->
+<style>
+  .btn-link{background:none;border:none;color:var(--acc);cursor:pointer;font-family:var(--font);font-size:.82rem;padding:0;text-decoration:underline;text-underline-offset:2px}
+  .btn-link:hover{opacity:.8}
+</style>
+
 <script type="module" src="js/app.js"></script>
 </body>
 </html>
