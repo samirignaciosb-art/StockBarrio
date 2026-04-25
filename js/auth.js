@@ -66,6 +66,7 @@ export async function doLogout() {
 async function boot(uid, storeName) {
   state.uid=uid; state.storeName=storeName;
   sessionStorage.setItem('sb_uid', uid);
+  sessionStorage.setItem('sb_email', email||'');
   sessionStorage.setItem('sb_store', storeName);
   const {startListeners} = await import('./data.js');
   startListeners(uid);
@@ -97,3 +98,7 @@ window.doLogin     = doLogin;
 window.doRegister  = doRegister;
 window.doLogout    = doLogout;
 window.showAuthTab = showAuthTab;
+
+export function isAdmin(email) {
+  return email === 'app.ubipet.shop@gmail.com';
+}
