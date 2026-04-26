@@ -100,5 +100,5 @@ window.doLogout    = doLogout;
 window.showAuthTab = showAuthTab;
 
 export function isAdmin(email) {
-  return email === 'app.ubipet.shop@gmail.com';
+  return email === 'samirhelado@gmail.com';
 }
