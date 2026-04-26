@@ -5,7 +5,7 @@ import { auth, db, createUserWithEmailAndPassword, doc, setDoc, collection, getD
 import { showToast, fmt, toDate } from './utils.js';
 
 // ── TU EMAIL DE ADMIN — cambia esto por el tuyo ──
-const ADMIN_EMAIL = 'app.ubipet.shop@gmail.com';
+const ADMIN_EMAIL = 'samirhelado@gmail.com';
 
 export function isAdmin(email) {
   return email === ADMIN_EMAIL;
