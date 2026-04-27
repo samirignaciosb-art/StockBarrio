@@ -20,20 +20,11 @@
       <p>Sistema de inventario profesional</p>
     </div>
     <div class="auth-card">
-      <div class="auth-tabs">
-        <button class="atab active" id="atab-login"    onclick="showAuthTab('login')">Ingresar</button>
-        <button class="atab"        id="atab-register" onclick="showAuthTab('register')">Registrar negocio</button>
-      </div>
-      <div class="auth-panel active" id="apanel-login">
-        <div class="field"><label>Email</label><input id="login-email" type="email" placeholder="correo@negocio.cl" autocomplete="email"></div>
-        <div class="field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password"></div>
-        <button class="btn-auth" onclick="doLogin()">Ingresar →</button>
-      </div>
-      <div class="auth-panel" id="apanel-register">
-        <div class="field"><label>Nombre del negocio</label><input id="reg-store" type="text" placeholder="Almacén Don Pedro"></div>
-        <div class="field"><label>Email</label><input id="reg-email" type="email" placeholder="correo@negocio.cl"></div>
-        <div class="field"><label>Contraseña</label><input id="reg-pass" type="password" placeholder="Mínimo 6 caracteres"></div>
-        <button class="btn-auth" onclick="doRegister()">Crear mi negocio →</button>
+      <div class="field"><label>Email</label><input id="login-email" type="email" placeholder="correo@negocio.cl" autocomplete="email"></div>
+      <div class="field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password"></div>
+      <button class="btn-auth" onclick="doLogin()">Ingresar →</button>
+      <div style="margin-top:1rem;text-align:center;font-size:.75rem;color:var(--text2)">
+        ¿No tienes acceso? Contacta al administrador de StockBarrio.
       </div>
     </div>
   </div>
