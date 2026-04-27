@@ -1,5 +1,6 @@
 // auth.js
 import { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, doc, setDoc, getDoc, serverTimestamp } from './firebase.js';
+import { browserLocalPersistence, browserSessionPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { state, showToast, initTheme, initNetwork } from './utils.js';
 
 const ERR = {
@@ -32,23 +33,27 @@ export async function doRegister() {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     await setDoc(doc(db,'stores',uid),{storeName,email,uid,createdAt:serverTimestamp(),plan:'basico'});
-    await boot(uid, storeName);
+    await boot(uid, storeName, email);
   } catch(e){ showToast(fbErr(e.code),'err'); }
   finally{ setLoading(false); }
 }
 
 export async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-pass').value;
+  const email      = document.getElementById('login-email').value.trim();
+  const pass       = document.getElementById('login-pass').value;
+  const remember   = document.getElementById('login-remember')?.checked ?? false;
   if(!email||!pass){ showToast('Ingresa email y contraseña','err'); return; }
   setLoading(true);
   try {
+    // Persistencia según elección del usuario
+    await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+    localStorage.setItem('sb_persist', remember ? 'local' : 'session');
     const cred = await signInWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     const snap = await getDoc(doc(db,'stores',uid));
     const storeName = snap.exists() ? snap.data().storeName : email.split('@')[0];
     if(!snap.exists()) await setDoc(doc(db,'stores',uid),{storeName,email,uid,createdAt:serverTimestamp()});
-    await boot(uid, storeName);
+    await boot(uid, storeName, email);
   } catch(e){ showToast(fbErr(e.code),'err'); }
   finally{ setLoading(false); }
 }
@@ -58,14 +63,16 @@ export async function doLogout() {
   state.products=[]; state.sales=[]; state.adjustments=[];
   state.uid=null; state.storeName='';
   sessionStorage.clear();
+  localStorage.removeItem('sb_persist');
   await signOut(auth);
   document.getElementById('app').classList.remove('visible');
   document.getElementById('auth-screen').classList.remove('hidden');
 }
 
-async function boot(uid, storeName) {
+async function boot(uid, storeName, email='') {
   state.uid=uid; state.storeName=storeName;
   sessionStorage.setItem('sb_uid', uid);
+  sessionStorage.setItem('sb_email', email||'');
   sessionStorage.setItem('sb_store', storeName);
   const {startListeners} = await import('./data.js');
   startListeners(uid);
@@ -75,14 +82,25 @@ async function boot(uid, storeName) {
 
 export function initAuth() {
   initTheme();
-  // Restore session on reload
+  // Restaurar sesión solo si eligió "mantener sesión"
   onAuthStateChanged(auth, async user => {
-    if(!user||state.uid) return;
+    if(!user || state.uid) return;
+    // Verificar si eligió persistencia local
+    const persistence = localStorage.getItem('sb_persist');
+    if(persistence !== 'local') {
+      // No eligió recordar — cerrar sesión
+      await signOut(auth);
+      return;
+    }
     try {
       const snap = await getDoc(doc(db,'stores',user.uid));
-      const storeName = snap.exists() ? snap.data().storeName : user.email.split('@')[0];
-      await boot(user.uid, storeName);
-    } catch(e){}
+      if(!snap.exists()) { await signOut(auth); return; }
+      const storeName = snap.data().storeName;
+      await boot(user.uid, storeName, user.email||'');
+    } catch(e){
+      console.error('Session restore error:', e);
+      await signOut(auth);
+    }
   });
 }
 
@@ -97,3 +115,7 @@ window.doLogin     = doLogin;
 window.doRegister  = doRegister;
 window.doLogout    = doLogout;
 window.showAuthTab = showAuthTab;
+
+export function isAdmin(email) {
+  return email === 'samirhelado@gmail.com';
+}
