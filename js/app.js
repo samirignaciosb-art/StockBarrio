@@ -46,6 +46,14 @@ window.navigate = async function(view) {
   document.getElementById('mnav-'+view)?.classList.add('active');
   document.getElementById('page-title').textContent = TITLES[view]||view;
 
+  if(view === 'dashboard') {
+    view = 'reportes';
+    document.querySelectorAll('.nav-item,.mnv').forEach(n=>n.classList.remove('active'));
+    document.getElementById('snav-reportes')?.classList.add('active');
+    document.getElementById('mnav-reportes')?.classList.add('active');
+    document.getElementById('page-title').textContent = TITLES['reportes'];
+  }
+
   // Lazy load vistas — rutas explícitas sin ambigüedad
   const ops = await import('./views/operations.js?v=20260427');
   
