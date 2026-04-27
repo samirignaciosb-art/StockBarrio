@@ -1,5 +1,6 @@
 // auth.js
 import { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, doc, setDoc, getDoc, serverTimestamp } from './firebase.js';
+import { browserLocalPersistence, browserSessionPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { state, showToast, initTheme, initNetwork } from './utils.js';
 
 const ERR = {
@@ -38,11 +39,15 @@ export async function doRegister() {
 }
 
 export async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-pass').value;
+  const email    = document.getElementById('login-email').value.trim();
+  const pass     = document.getElementById('login-pass').value;
+  const remember = document.getElementById('login-remember')?.checked ?? false;
   if(!email||!pass){ showToast('Ingresa email y contraseña','err'); return; }
   setLoading(true);
   try {
+    // Persistencia según elección del usuario
+    await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+    localStorage.setItem('sb_persist', remember ? 'local' : 'session');
     const cred = await signInWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     const snap = await getDoc(doc(db,'stores',uid));
@@ -58,6 +63,7 @@ export async function doLogout() {
   state.products=[]; state.sales=[]; state.adjustments=[];
   state.uid=null; state.storeName='';
   sessionStorage.clear();
+  localStorage.removeItem('sb_persist');
   await signOut(auth);
   document.getElementById('app').classList.remove('visible');
   document.getElementById('auth-screen').classList.remove('hidden');
@@ -78,9 +84,15 @@ let _booting = false;
 
 export function initAuth() {
   initTheme();
-  // Restore session on reload
+  // Pre-marcar checkbox si eligió recordar sesión
+  const cb = document.getElementById('login-remember');
+  if (cb && localStorage.getItem('sb_persist') === 'local') cb.checked = true;
+  // Restaurar sesión solo si eligió "mantener sesión"
   onAuthStateChanged(auth, async user => {
     if(!user || state.uid || _booting) return;
+    if(localStorage.getItem('sb_persist') !== 'local') {
+      await signOut(auth); return;
+    }
     _booting = true;
     try {
       const snap = await getDoc(doc(db,'stores',user.uid));
