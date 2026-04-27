@@ -32,7 +32,7 @@ export async function doRegister() {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     await setDoc(doc(db,'stores',uid),{storeName,email,uid,createdAt:serverTimestamp(),plan:'basico'});
-    await boot(uid, storeName);
+    await boot(uid, storeName, email);
   } catch(e){ showToast(fbErr(e.code),'err'); }
   finally{ setLoading(false); }
 }
@@ -48,7 +48,7 @@ export async function doLogin() {
     const snap = await getDoc(doc(db,'stores',uid));
     const storeName = snap.exists() ? snap.data().storeName : email.split('@')[0];
     if(!snap.exists()) await setDoc(doc(db,'stores',uid),{storeName,email,uid,createdAt:serverTimestamp()});
-    await boot(uid, storeName);
+    await boot(uid, storeName, email);
   } catch(e){ showToast(fbErr(e.code),'err'); }
   finally{ setLoading(false); }
 }
@@ -82,7 +82,7 @@ export function initAuth() {
     try {
       const snap = await getDoc(doc(db,'stores',user.uid));
       const storeName = snap.exists() ? snap.data().storeName : user.email.split('@')[0];
-      await boot(user.uid, storeName);
+      await boot(user.uid, storeName, user.email||'');
     } catch(e){}
   });
 }
