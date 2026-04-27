@@ -3,61 +3,47 @@ import { state, fmt, toDate, showToast, openModal } from '../utils.js';
 import { addStockEntry, recordSale, adjustStockDB } from '../data.js';
 
 // ══════════════════════════════════════
-// ALERTAS — solo quiebres de stock
+// ALERTAS + QUÉ COMPRAR
 // ══════════════════════════════════════
 export function renderAlertas(c) {
-  c.innerHTML = `<div id="alerts-root" style="animation:fadeIn .3s ease"></div>`;
+  c.innerHTML=`<div id="alerts-root" style="animation:fadeIn .3s ease"></div>`;
   buildAlerts();
-  window.addEventListener('products-updated', buildAlerts);
+  window.addEventListener('products-updated',buildAlerts);
 }
-
-function buildAlerts() {
-  const el = document.getElementById('alerts-root'); if (!el) return;
-  const critical = state.products.filter(p => p.stock === 0);
-  const low      = state.products.filter(p => p.stock > 0 && p.stock <= p.minStock);
-  const all      = [...critical, ...low];
-
-  el.innerHTML = `
-    <div style="max-width:640px">
+function buildAlerts(){
+  const el=document.getElementById('alerts-root'); if(!el)return;
+  const critical=state.products.filter(p=>p.stock===0);
+  const low=state.products.filter(p=>p.stock>0&&p.stock<=p.minStock);
+  const all=[...critical,...low];
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">🚨 Quiebres de stock</div>
-          ${all.length ? `<span class="card-badge red">${all.length} producto${all.length !== 1 ? 's' : ''}</span>` : ''}
-        </div>
+        <div class="card-header"><div class="card-title">⚡ Stock crítico</div>${all.length?`<span class="card-badge red">${all.length}</span>`:''}</div>
         <div class="card-body">
-          ${all.length === 0
-            ? `<div style="text-align:center;padding:2.5rem;color:var(--acc)">
-                <div style="font-size:2rem;margin-bottom:.5rem">✓</div>
-                <div style="font-weight:600">Todo el stock está en orden</div>
-                <div style="font-size:.82rem;color:var(--text2);margin-top:.35rem">No hay productos con stock bajo o agotado</div>
-               </div>`
-            : `<div style="display:flex;flex-direction:column;gap:.5rem">
-                ${critical.length ? `<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;color:var(--red);margin:.25rem 0 .15rem;letter-spacing:.05em">Sin stock (${critical.length})</div>` : ''}
-                ${critical.map(p => alertRow(p)).join('')}
-                ${low.length ? `<div style="font-size:.72rem;font-weight:700;text-transform:uppercase;color:var(--warn);margin:.5rem 0 .15rem;letter-spacing:.05em">Stock bajo (${low.length})</div>` : ''}
-                ${low.map(p => alertRow(p)).join('')}
-               </div>`
-          }
+          ${all.length===0?`<div style="text-align:center;color:var(--acc);padding:1.5rem">✓ Todo en orden</div>`
+          :`<div style="display:flex;flex-direction:column;gap:.5rem">${all.map(p=>`
+            <div class="alert-item">
+              <div class="alert-dot ${p.stock===0?'red':'warn'}"></div>
+              <div class="alert-info">
+                <div class="alert-name">${p.emoji||'📦'} ${p.name}</div>
+                <div class="alert-detail">${p.stock===0?'Sin stock':`${p.stock} uds. — mín: ${p.minStock}`}</div>
+              </div>
+              <span class="alert-tag ${p.stock===0?'red':'warn'}">${p.stock===0?'URGENTE':'BAJO'}</span>
+            </div>`).join('')}</div>`}
         </div>
       </div>
-      ${all.length > 0 ? `
-      <div style="margin-top:.75rem;text-align:center">
-        <button class="btn-sm" onclick="navigate('comprar')">🛒 Ver lista de compras →</button>
-      </div>` : ''}
+      <div class="card">
+        <div class="card-header"><div class="card-title">🛒 Lista de compras</div></div>
+        <div class="card-body">
+          ${all.length===0?`<div style="text-align:center;color:var(--text2);padding:1.5rem;font-size:.85rem">No hay compras urgentes</div>`
+          :all.map(p=>{const toBuy=Math.max(p.minStock*3-p.stock,p.minStock);return`
+            <div class="buy-item">
+              <div><div class="buy-name">${p.emoji||'📦'} ${p.name}</div><div class="buy-meta">Stock: ${p.stock} · Mín: ${p.minStock}</div></div>
+              <div><div class="buy-qty">${toBuy} uds.</div><div class="buy-cost">≈ ${fmt(toBuy*p.cost)}</div></div>
+            </div>`;}).join('')}
+        </div>
+      </div>
     </div>`;
-}
-
-function alertRow(p) {
-  const isOut = p.stock === 0;
-  return `<div class="alert-item">
-    <div class="alert-dot ${isOut ? 'red' : 'warn'}"></div>
-    <div class="alert-info">
-      <div class="alert-name">${p.emoji || '📦'} ${p.name}</div>
-      <div class="alert-detail">${isOut ? 'Sin stock' : `${p.stock} uds. — mínimo: ${p.minStock}`}</div>
-    </div>
-    <span class="alert-tag ${isOut ? 'red' : 'warn'}">${isOut ? 'URGENTE' : 'BAJO'}</span>
-  </div>`;
-}
 }
 
 // ══════════════════════════════════════
@@ -407,7 +393,7 @@ window.finalizarToma = async () => {
 };
 
 // ══════════════════════════════════════
-// QUÉ COMPRAR — checklist de supermercado
+// QUÉ COMPRAR — vista dedicada
 // ══════════════════════════════════════
 export function renderComprar(c) {
   c.innerHTML = `<div id="comprar-root" style="animation:fadeIn .3s ease"></div>`;
@@ -415,100 +401,46 @@ export function renderComprar(c) {
   window.addEventListener('products-updated', buildComprar);
 }
 
-function getChecked() {
-  try { return JSON.parse(localStorage.getItem('sb_comprar_checked') || '[]'); } catch { return []; }
-}
-function setChecked(arr) {
-  localStorage.setItem('sb_comprar_checked', JSON.stringify(arr));
-}
-
 function buildComprar() {
-  const el = document.getElementById('comprar-root'); if (!el) return;
+  const el = document.getElementById('comprar-root'); if(!el) return;
   const critical = state.products.filter(p => p.stock === 0);
   const low      = state.products.filter(p => p.stock > 0 && p.stock <= p.minStock);
   const all      = [...critical, ...low];
-  const checked  = getChecked();
-  const pending  = all.filter(p => !checked.includes(p.id));
-  const done     = all.filter(p =>  checked.includes(p.id));
-  const total    = all.reduce((s, p) => {
-    const toBuy = Math.max(p.minStock * 3 - p.stock, p.minStock);
-    return s + toBuy * p.cost;
-  }, 0);
 
   el.innerHTML = `
-    <div style="max-width:620px">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">🛒 Lista de compras</div>
-          <div style="display:flex;gap:.5rem;align-items:center">
-            ${all.length > 0 ? `<span style="font-size:.78rem;color:var(--text2)">${done.length}/${all.length} listo</span>` : ''}
-            ${checked.length > 0 ? `<button class="btn-sm ghost" style="padding:.28rem .6rem;font-size:.72rem" onclick="resetComprar()">↺ Resetear</button>` : ''}
-          </div>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">🛒 Lista de compras sugerida</div>
+        <span class="card-badge ${all.length>0?'red':'green'}">${all.length>0?all.length+' productos':'Todo OK'}</span>
+      </div>
+      <div class="card-body">
         ${all.length === 0
-          ? `<div style="padding:2.5rem;text-align:center;color:var(--acc)">
+          ? `<div style="text-align:center;padding:2rem;color:var(--acc)">
               <div style="font-size:2rem;margin-bottom:.5rem">✓</div>
-              <div style="font-weight:600">No hay compras urgentes</div>
-              <div style="font-size:.82rem;color:var(--text2);margin-top:.35rem">Todo el stock está en orden</div>
-             </div>`
-          : `<div>
-              ${pending.length > 0 ? `
-                <div style="padding:.6rem 1.1rem .3rem;font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--text2);letter-spacing:.06em">
-                  Pendiente (${pending.length})
+              <div style="font-weight:600">Todo el stock está en orden</div>
+              <div style="font-size:.82rem;color:var(--text2);margin-top:.35rem">No hay productos que comprar urgentemente</div>
+            </div>`
+          : all.map(p => {
+              const toBuy = Math.max(p.minStock * 3 - p.stock, p.minStock);
+              const isOut = p.stock === 0;
+              return `<div class="buy-item" style="margin-bottom:.6rem">
+                <div>
+                  <div class="buy-name">${p.emoji||'📦'} ${p.name}</div>
+                  <div class="buy-meta">
+                    Stock actual: <b style="color:${isOut?'var(--red)':'var(--warn)'}">${p.stock}</b> · 
+                    Mínimo: ${p.minStock} · 
+                    <span style="color:${isOut?'var(--red)':'var(--warn)'};font-weight:600">${isOut?'URGENTE':'Stock bajo'}</span>
+                  </div>
                 </div>
-                ${pending.map(p => comprarRow(p, false)).join('')}` : ''}
-              ${done.length > 0 ? `
-                <div style="padding:.6rem 1.1rem .3rem;font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--text2);letter-spacing:.06em;border-top:1px solid var(--border);margin-top:.5rem">
-                  En el carrito ✓ (${done.length})
+                <div style="text-align:right">
+                  <div class="buy-qty">${toBuy} uds.</div>
+                  <div class="buy-cost">≈ ${fmt(toBuy * p.cost)}</div>
                 </div>
-                ${done.map(p => comprarRow(p, true)).join('')}` : ''}
-             </div>
-             <div style="display:flex;justify-content:space-between;align-items:center;padding:.85rem 1.1rem;border-top:1px solid var(--border);background:var(--surface2)">
-               <span style="font-size:.82rem;color:var(--text2)">Costo total estimado</span>
-               <span style="font-weight:800;color:var(--warn);font-family:var(--font-mono)">${fmt(total)}</span>
-             </div>`
-        }
+              </div>`;
+            }).join('')}
       </div>
-      <div style="margin-top:.6rem;font-size:.72rem;color:var(--text2);text-align:center">
-        Cantidad sugerida = mínimo × 3 — toca un ítem para marcarlo como comprado
-      </div>
+    </div>
+    <div style="margin-top:.75rem;font-size:.75rem;color:var(--text2);text-align:center">
+      Sugerencia basada en stock mínimo × 3
     </div>`;
 }
-
-function comprarRow(p, isDone) {
-  const toBuy = Math.max(p.minStock * 3 - p.stock, p.minStock);
-  const isOut = p.stock === 0;
-  const urgColor = isOut ? 'var(--red)' : 'var(--warn)';
-  return `
-    <div onclick="toggleComprar('${p.id}')" style="display:flex;align-items:center;gap:.85rem;padding:.8rem 1.1rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;${isDone ? 'opacity:.5' : ''}"
-      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-      <div style="width:22px;height:22px;border-radius:50%;border:2px solid ${isDone ? 'var(--acc)' : urgColor};
-        background:${isDone ? 'var(--acc)' : 'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s">
-        ${isDone ? '<span style="color:#fff;font-size:.75rem;font-weight:900">✓</span>' : ''}
-      </div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:.9rem;${isDone ? 'text-decoration:line-through' : ''}">${p.emoji || '📦'} ${p.name}</div>
-        <div style="font-size:.73rem;color:var(--text2);margin-top:.15rem">
-          Stock: <b style="color:${urgColor}">${p.stock}</b> · mín: ${p.minStock}${!isDone ? ` · <b style="color:${urgColor}">${isOut ? '⚡ URGENTE' : '⚠ Bajo'}</b>` : ''}
-        </div>
-      </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-weight:700;font-size:.9rem">${toBuy} uds.</div>
-        <div style="font-size:.72rem;color:var(--text2)">≈ ${fmt(toBuy * p.cost)}</div>
-      </div>
-    </div>`;
-}
-
-window.toggleComprar = (id) => {
-  const checked = getChecked();
-  const idx = checked.indexOf(id);
-  if (idx === -1) checked.push(id);
-  else checked.splice(idx, 1);
-  setChecked(checked);
-  buildComprar();
-};
-
-window.resetComprar = () => {
-  localStorage.removeItem('sb_comprar_checked');
-  buildComprar();
-};

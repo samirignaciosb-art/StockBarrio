@@ -110,26 +110,19 @@ window.createClientAccount = async function() {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
 
-    // Enviar email de verificación/bienvenida
-    const { sendEmailVerification } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-    await sendEmailVerification(cred.user, {
-      url: `https://samirignaciosb-art.github.io/StockBarrio/?welcome=1&store=${encodeURIComponent(storeName)}`,
-      handleCodeInApp: false
-    });
-
     // Guardar datos en Firestore
     await setDoc(doc(db, 'stores', uid), {
       storeName, email, uid, plan,
-      createdAt:   serverTimestamp(),
-      createdBy:   ADMIN_EMAIL,
-      active:      true,
-      mustChangePass: true,
-      tempPass:    pass
+      createdAt:      serverTimestamp(),
+      createdBy:      ADMIN_EMAIL,
+      active:         true,
+      mustChangePass: true,  // fuerza cambio de clave al primer login
+      tempPass:       pass
     });
 
-    // Volver a loguear como admin
+    // Volver a loguear como admin (crear usuario desloguea al admin en Firebase)
     const { signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-    const adminPass = sessionStorage.getItem('sb_adminpass');
+    const adminPass = prompt('Para continuar como admin, ingresa tu contraseña:');
     if(adminPass) {
       await signInWithEmailAndPassword(auth, ADMIN_EMAIL, adminPass);
     }
