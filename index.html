@@ -23,6 +23,12 @@
     <div class="auth-card">
       <div class="field"><label>Email</label><input id="login-email" type="email" placeholder="correo@negocio.cl" autocomplete="email"></div>
       <div class="field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password"></div>
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem;cursor:pointer" onclick="document.getElementById('login-remember').click()">
+        <input type="checkbox" id="login-remember" style="width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0">
+        <label for="login-remember" style="font-size:.82rem;color:var(--text2);cursor:pointer;user-select:none">
+          Mantener sesión iniciada en este dispositivo
+        </label>
+      </div>
       <button class="btn-auth" onclick="doLogin()">Ingresar →</button>
       <div style="margin-top:1rem;text-align:center;font-size:.75rem;color:var(--text2)">
         ¿No tienes acceso? Contacta al administrador de StockBarrio.
