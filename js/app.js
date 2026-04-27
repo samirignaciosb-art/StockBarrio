@@ -31,7 +31,7 @@ export function launchApp(storeName) {
     const adminBtn = document.getElementById('snav-admin');
     if(adminBtn) adminBtn.style.display='flex';
   }
-  navigate('dashboard');
+  navigate('alertas');
 }
 
 // ── ROUTER ──
@@ -46,27 +46,17 @@ window.navigate = async function(view) {
   document.getElementById('mnav-'+view)?.classList.add('active');
   document.getElementById('page-title').textContent = TITLES[view]||view;
 
-  if(view === 'dashboard') {
-    view = 'reportes';
-    document.querySelectorAll('.nav-item,.mnv').forEach(n=>n.classList.remove('active'));
-    document.getElementById('snav-reportes')?.classList.add('active');
-    document.getElementById('mnav-reportes')?.classList.add('active');
-    document.getElementById('page-title').textContent = TITLES['reportes'];
-  }
+  // dashboard → reportes directamente
+  if(view === 'dashboard') view = 'reportes';
 
   // Lazy load vistas — rutas explícitas sin ambigüedad
   const ops = await import('./views/operations.js?v=20260427');
   
-  if(view === 'dashboard') {
-    const dash = await import('./views/dashboard.js?v=20260427');
-    dash.renderDashboard(c);
-  } else if(view === 'inventario') {
+  if(view === 'inventario') {
     const inv = await import('./views/inventory.js?v=20260427');
     inv.renderInventario(c);
   } else if(view === 'alertas') {
     ops.renderAlertas(c);
-  } else if(view === 'comprar') {
-    ops.renderComprar(c);
   } else if(view === 'entrada') {
     ops.renderEntrada(c);
   } else if(view === 'salida') {
