@@ -46,17 +46,16 @@ window.navigate = async function(view) {
   document.getElementById('mnav-'+view)?.classList.add('active');
   document.getElementById('page-title').textContent = TITLES[view]||view;
 
-  // dashboard → reportes directamente
-  if(view === 'dashboard') view = 'reportes';
-
   // Lazy load vistas — rutas explícitas sin ambigüedad
-  const ops = await import('./views/operations.js?v=20260427');
+  const ops = await import('./views/operations.js?v=1777326438');
   
   if(view === 'inventario') {
-    const inv = await import('./views/inventory.js?v=20260427');
+    const inv = await import('./views/inventory.js?v=1777326438');
     inv.renderInventario(c);
   } else if(view === 'alertas') {
     ops.renderAlertas(c);
+  } else if(view === 'comprar') {
+    ops.renderComprar(c);
   } else if(view === 'entrada') {
     ops.renderEntrada(c);
   } else if(view === 'salida') {
@@ -68,10 +67,10 @@ window.navigate = async function(view) {
   } else if(view === 'toma') {
     ops.renderToma(c);
   } else if(view === 'admin') {
-    const {renderAdmin} = await import('./admin.js?v=20260427');
+    const {renderAdmin} = await import('./admin.js?v=1777326438');
     renderAdmin(c);
   } else if(view === 'reportes') {
-    const {renderReportes} = await import('./exports.js?v=20260427');
+    const {renderReportes} = await import('./exports.js?v=1777326438');
     renderReportes(c);
   }
 };
