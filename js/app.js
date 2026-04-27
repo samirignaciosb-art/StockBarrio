@@ -14,8 +14,6 @@ const TITLES = {
   historial:  '📋 Historial de ventas',
   ajustes:    '🔧 Ajustes de stock',
   toma:       '📋 Toma de inventario',
-  admin:      '⚙️ Panel de Administrador',
-  reportes:   '📥 Reportes y Descargas',
 };
 
 export function launchApp(storeName) {
@@ -25,15 +23,6 @@ export function launchApp(storeName) {
   document.getElementById('tb-store').textContent = storeName;
   initNetwork();
   window.addEventListener('products-updated', updateBadge);
-  // Mostrar panel admin si es el administrador
-  import('./auth.js').then(({isAdmin}) => {
-    import('./utils.js').then(({state}) => {
-      if(isAdmin && isAdmin(sessionStorage.getItem('sb_email')||'')) {
-        const adminBtn = document.getElementById('snav-admin');
-        if(adminBtn) adminBtn.style.display='flex';
-      }
-    });
-  });
   navigate('dashboard');
 }
 
@@ -49,33 +38,31 @@ window.navigate = async function(view) {
   document.getElementById('mnav-'+view)?.classList.add('active');
   document.getElementById('page-title').textContent = TITLES[view]||view;
 
-  // Lazy load vistas — rutas explícitas sin ambigüedad
-  const ops = await import('./views/operations.js');
-  
-  if(view === 'dashboard') {
-    const dash = await import('./views/dashboard.js');
-    dash.renderDashboard(c);
-  } else if(view === 'inventario') {
-    const inv = await import('./views/inventory.js');
-    inv.renderInventario(c);
-  } else if(view === 'alertas' || view === 'comprar') {
-    ops.renderAlertas(c);
-  } else if(view === 'entrada') {
-    ops.renderEntrada(c);
-  } else if(view === 'salida') {
-    ops.renderSalida(c);
-  } else if(view === 'historial') {
-    ops.renderHistorial(c);
-  } else if(view === 'ajustes') {
-    ops.renderAjustes(c);
-  } else if(view === 'toma') {
-    ops.renderToma(c);
-  } else if(view === 'admin') {
-    const {renderAdmin} = await import('./admin.js');
-    renderAdmin(c);
-  } else if(view === 'reportes') {
-    const {renderReportes} = await import('./exports.js');
-    renderReportes(c);
+  // Lazy load vistas
+  if(view==='dashboard') {
+    const {renderDashboard} = await import('./views/dashboard.js');
+    renderDashboard(c);
+  } else if(view==='inventario') {
+    const {renderInventario} = await import('./views/inventory.js');
+    renderInventario(c);
+  } else if(['alertas','comprar'].includes(view)) {
+    const {renderAlertas} = await import('./views/operations.js');
+    renderAlertas(c);
+  } else if(view==='entrada') {
+    const {renderEntrada} = await import('./views/operations.js');
+    renderEntrada(c);
+  } else if(view==='salida') {
+    const {renderSalida} = await import('./views/operations.js');
+    renderSalida(c);
+  } else if(view==='historial') {
+    const {renderHistorial} = await import('./views/operations.js');
+    renderHistorial(c);
+  } else if(view==='ajustes') {
+    const {renderAjustes} = await import('./views/operations.js');
+    renderAjustes(c);
+  } else if(view==='toma') {
+    const {renderToma} = await import('./views/operations.js');
+    renderToma(c);
   }
 };
 

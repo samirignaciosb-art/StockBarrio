@@ -16,7 +16,7 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-enableIndexedDbPersistence(db).catch(e => { if(e.code !== 'failed-precondition' && e.code !== 'unimplemented') console.warn(e); });
+enableIndexedDbPersistence(db).catch(() => {});
 
 export { auth, db };
 export { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut };

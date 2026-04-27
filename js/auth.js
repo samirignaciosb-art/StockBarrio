@@ -32,7 +32,7 @@ export async function doRegister() {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     await setDoc(doc(db,'stores',uid),{storeName,email,uid,createdAt:serverTimestamp(),plan:'basico'});
-    await boot(uid, storeName, email);
+    await boot(uid, storeName);
   } catch(e){ showToast(fbErr(e.code),'err'); }
   finally{ setLoading(false); }
 }
@@ -48,7 +48,7 @@ export async function doLogin() {
     const snap = await getDoc(doc(db,'stores',uid));
     const storeName = snap.exists() ? snap.data().storeName : email.split('@')[0];
     if(!snap.exists()) await setDoc(doc(db,'stores',uid),{storeName,email,uid,createdAt:serverTimestamp()});
-    await boot(uid, storeName, email);
+    await boot(uid, storeName);
   } catch(e){ showToast(fbErr(e.code),'err'); }
   finally{ setLoading(false); }
 }
@@ -63,10 +63,9 @@ export async function doLogout() {
   document.getElementById('auth-screen').classList.remove('hidden');
 }
 
-async function boot(uid, storeName, email='') {
+async function boot(uid, storeName) {
   state.uid=uid; state.storeName=storeName;
   sessionStorage.setItem('sb_uid', uid);
-  sessionStorage.setItem('sb_email', email||'');
   sessionStorage.setItem('sb_store', storeName);
   const {startListeners} = await import('./data.js');
   startListeners(uid);
@@ -74,22 +73,16 @@ async function boot(uid, storeName, email='') {
   launchApp(storeName);
 }
 
-let _booting = false;
-
 export function initAuth() {
   initTheme();
   // Restore session on reload
   onAuthStateChanged(auth, async user => {
-    if(!user || state.uid || _booting) return;
-    _booting = true;
+    if(!user||state.uid) return;
     try {
       const snap = await getDoc(doc(db,'stores',user.uid));
       const storeName = snap.exists() ? snap.data().storeName : user.email.split('@')[0];
-      await boot(user.uid, storeName, user.email||'');
-    } catch(e){
-      console.error('Session restore error:', e);
-      _booting = false;
-    }
+      await boot(user.uid, storeName);
+    } catch(e){}
   });
 }
 
@@ -104,7 +97,3 @@ window.doLogin     = doLogin;
 window.doRegister  = doRegister;
 window.doLogout    = doLogout;
 window.showAuthTab = showAuthTab;
-
-export function isAdmin(email) {
-  return email === 'samirhelado@gmail.com';
-}
