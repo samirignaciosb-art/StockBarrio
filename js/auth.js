@@ -74,16 +74,22 @@ async function boot(uid, storeName) {
   launchApp(storeName);
 }
 
+let _booting = false;
+
 export function initAuth() {
   initTheme();
   // Restore session on reload
   onAuthStateChanged(auth, async user => {
-    if(!user||state.uid) return;
+    if(!user || state.uid || _booting) return;
+    _booting = true;
     try {
       const snap = await getDoc(doc(db,'stores',user.uid));
       const storeName = snap.exists() ? snap.data().storeName : user.email.split('@')[0];
       await boot(user.uid, storeName, user.email||'');
-    } catch(e){}
+    } catch(e){
+      console.error('Session restore error:', e);
+      _booting = false;
+    }
   });
 }
 
