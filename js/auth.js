@@ -63,7 +63,7 @@ export async function doLogout() {
   document.getElementById('auth-screen').classList.remove('hidden');
 }
 
-async function boot(uid, storeName) {
+async function boot(uid, storeName, email='') {
   state.uid=uid; state.storeName=storeName;
   sessionStorage.setItem('sb_uid', uid);
   sessionStorage.setItem('sb_email', email||'');
