@@ -45,16 +45,16 @@ export async function doLogin() {
   if(!email||!pass){ showToast('Ingresa email y contraseña','err'); return; }
   setLoading(true);
   try {
-    // Persistencia según elección del usuario
     await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
     localStorage.setItem('sb_persist', remember ? 'local' : 'session');
+    _manualLogin = true; // le avisa al listener que no interfiera
     const cred = await signInWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     const snap = await getDoc(doc(db,'stores',uid));
     const storeName = snap.exists() ? snap.data().storeName : email.split('@')[0];
     if(!snap.exists()) await setDoc(doc(db,'stores',uid),{storeName,email,uid,createdAt:serverTimestamp()});
     await boot(uid, storeName, email);
-  } catch(e){ showToast(fbErr(e.code),'err'); }
+  } catch(e){ _manualLogin = false; showToast(fbErr(e.code),'err'); }
   finally{ setLoading(false); }
 }
 
@@ -80,16 +80,20 @@ async function boot(uid, storeName, email='') {
   launchApp(storeName);
 }
 
-let _booting = false;
+let _booting     = false;
+let _manualLogin = false; // true cuando doLogin está en curso — el listener no debe interferir
 
 export function initAuth() {
   initTheme();
-  // Pre-marcar checkbox si eligió recordar sesión
+  // Pre-marcar checkbox si eligió recordar sesión anteriormente
   const cb = document.getElementById('login-remember');
-  if (cb && localStorage.getItem('sb_persist') === 'local') cb.checked = true;
-  // Restaurar sesión solo si eligió "mantener sesión"
+  if(cb && localStorage.getItem('sb_persist') === 'local') cb.checked = true;
+
   onAuthStateChanged(auth, async user => {
+    // Si el login lo inició doLogin, ese flujo ya llama boot() — ignorar aquí
+    if(_manualLogin) { _manualLogin = false; return; }
     if(!user || state.uid || _booting) return;
+    // Solo restaurar si el usuario eligió "mantener sesión"
     if(localStorage.getItem('sb_persist') !== 'local') {
       await signOut(auth); return;
     }
