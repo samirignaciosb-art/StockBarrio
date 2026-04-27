@@ -1,6 +1,5 @@
 // auth.js
 import { auth, db, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, doc, setDoc, getDoc, serverTimestamp } from './firebase.js';
-import { browserLocalPersistence, browserSessionPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { state, showToast, initTheme, initNetwork } from './utils.js';
 
 const ERR = {
@@ -39,15 +38,11 @@ export async function doRegister() {
 }
 
 export async function doLogin() {
-  const email      = document.getElementById('login-email').value.trim();
-  const pass       = document.getElementById('login-pass').value;
-  const remember   = document.getElementById('login-remember')?.checked ?? false;
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
   if(!email||!pass){ showToast('Ingresa email y contraseña','err'); return; }
   setLoading(true);
   try {
-    // Persistencia según elección del usuario
-    await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
-    localStorage.setItem('sb_persist', remember ? 'local' : 'session');
     const cred = await signInWithEmailAndPassword(auth, email, pass);
     const uid  = cred.user.uid;
     const snap = await getDoc(doc(db,'stores',uid));
@@ -63,7 +58,6 @@ export async function doLogout() {
   state.products=[]; state.sales=[]; state.adjustments=[];
   state.uid=null; state.storeName='';
   sessionStorage.clear();
-  localStorage.removeItem('sb_persist');
   await signOut(auth);
   document.getElementById('app').classList.remove('visible');
   document.getElementById('auth-screen').classList.remove('hidden');
@@ -80,26 +74,21 @@ async function boot(uid, storeName, email='') {
   launchApp(storeName);
 }
 
+let _booting = false;
+
 export function initAuth() {
   initTheme();
-  // Restaurar sesión solo si eligió "mantener sesión"
+  // Restore session on reload
   onAuthStateChanged(auth, async user => {
-    if(!user || state.uid) return;
-    // Verificar si eligió persistencia local
-    const persistence = localStorage.getItem('sb_persist');
-    if(persistence !== 'local') {
-      // No eligió recordar — cerrar sesión
-      await signOut(auth);
-      return;
-    }
+    if(!user || state.uid || _booting) return;
+    _booting = true;
     try {
       const snap = await getDoc(doc(db,'stores',user.uid));
-      if(!snap.exists()) { await signOut(auth); return; }
-      const storeName = snap.data().storeName;
+      const storeName = snap.exists() ? snap.data().storeName : user.email.split('@')[0];
       await boot(user.uid, storeName, user.email||'');
     } catch(e){
       console.error('Session restore error:', e);
-      await signOut(auth);
+      _booting = false;
     }
   });
 }
